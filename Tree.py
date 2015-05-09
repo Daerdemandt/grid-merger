@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from itertools import product, chain
-from random import random
+from math import sqrt # for distance
+from random import random # for demonstration purposes only
 
 
 class DimTreeNode(object):
@@ -91,6 +92,11 @@ class DimTreeNode(object):
 			print('\t' * level + 'Descendants:')
 			for d in self.descendants:
 				self.descendants[d].print_recursive(level + 1)
+
+	def distance(self, a, b):
+		return sqrt(sum((a[i] - b[i])**2 for i in range(self.dimensions)))
+
+# end of DimTreeNode
 
 def show_usage():
 	maximum_x = 1
