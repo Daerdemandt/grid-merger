@@ -2,6 +2,7 @@
 from itertools import product, chain
 from math import sqrt # for distance
 from random import random # for demonstration purposes only
+from collections import OrderedDict # descendants order shall be preserved
 
 
 class DimTreeNode(object):
@@ -31,23 +32,20 @@ class DimTreeNode(object):
 		
 	
 	def split(self):
-		def upper(limit):
-			return (sum(limit) / 2, limit[1])
-		def lower(limit):
-			return (limit[0], sum(limit) / 2)
-			
-		descs = {():()} # descendants' coordinates
-		for limit in self.limits:
-			new_descs = {}
-			for des in descs:
-				new_descs[des + (True,)] = descs[des] + (upper(limit),)
-				new_descs[des + (False,)] = descs[des] + (lower(limit),)
-			descs = new_descs
-		
 		def new_node(addr):
-			return DimTreeNode(descs[addr], self, self.capacity)
+			def descendant_limits():
+				def upper(i):
+					return (sum(self.limits[i]) / 2, self.limits[i][1])
+				def lower(i):
+					return (self.limits[i][0], sum(self.limits[i]) / 2)
+			
+				return tuple(upper(i) if addr[i] else lower(i) for i in range(self.dimensions))
+				
+			return DimTreeNode(descendant_limits(), self, self.capacity)
 		
-		self.descendants = {addr:new_node(addr) for addr in descs}
+		self.descendants = OrderedDict()
+		for address in product([False, True], repeat=self.dimensions):
+			self.descendants[address] = new_node(address)
 		
 		for obj in self.objects:
 			self.descendants[self.accomodation(obj)].add(obj)
@@ -75,9 +73,7 @@ class DimTreeNode(object):
 			for obj in self.objects:
 				yield obj
 		else:
-			addresses = product([True, False], repeat=self.dimensions)
 			child_result_iterators = [self.descendants[d].traverse_objects() for d in self.descendants]
-
 			for elem in chain.from_iterable(child_result_iterators):
 				yield(elem) # Can't I just somehow return chain result?
 			
@@ -95,8 +91,9 @@ class DimTreeNode(object):
 
 	def distance(self, a, b):
 		return sqrt(sum((a[i] - b[i])**2 for i in range(self.dimensions)))
+		
 
-# end of DimTreeNode
+
 
 def show_usage():
 	maximum_x = 1
