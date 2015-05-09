@@ -5,7 +5,7 @@ from random import random
 
 class DimTreeNode(object):
 	# Any object stored must be iterable and provide access to at least dim numbers - its coordinates
-	def __init__(self, limits, parent=None):
+	def __init__(self, limits, parent=None, node_capacity=10):
 		def is_ordered(obj):
 			return isinstance(obj, list) or isinstance(obj, tuple)
 		assert is_ordered(limits)
@@ -14,7 +14,8 @@ class DimTreeNode(object):
 		assert all(lim_pair[1] > lim_pair[0] for lim_pair in limits)
 		self.limits = tuple(limits)
 		self.objects = []
-		self.is_leaf = True		
+		self.is_leaf = True
+		self.capacity = node_capacity
 		
 	def volume_contains(self, obj):
 		def coord_is_in(obj_coord, coord_limits):
@@ -42,7 +43,10 @@ class DimTreeNode(object):
 				new_descs[des + (False,)] = descs[des] + (lower(limit),)
 			descs = new_descs
 		
-		self.descendants = {addr:DimTreeNode(descs[addr], self) for addr in descs}
+		def new_node(addr):
+			return DimTreeNode(descs[addr], self, self.capacity)
+		
+		self.descendants = {addr:new_node(addr) for addr in descs}
 		
 		for obj in self.objects:
 			self.descendants[self.accomodation(obj)].add(obj)
@@ -50,7 +54,7 @@ class DimTreeNode(object):
 		self.objects = []
 		
 	def is_full(self):
-		return self.is_leaf and len(self.objects) > 2
+		return self.is_leaf and len(self.objects) > self.capacity
 
 	def add(self, obj):
 		assert self.volume_contains(obj)
@@ -79,6 +83,7 @@ class DimTreeNode(object):
 	def print_recursive(self, level=0):
 		if level == 0:
 			print('Dimensions = ', self.dimensions)
+			print('Capacity = ', self.capacity)
 		print('\t' * level + 'Limits:', self.limits)
 		if self.is_leaf:
 			print('\t' * level + 'Contents:', ' '.join(str(obj) for obj in self.objects))
@@ -98,7 +103,7 @@ def show_usage():
 			return limits[0] + random() * (limits[1] - limits[0])
 		return tuple(random_coordinate(coord_limit) for coord_limit in volume_limits)
 
-	example_tree = DimTreeNode(volume_limits)
+	example_tree = DimTreeNode(volume_limits, node_capacity=2)
 	
 	number_of_points = 5
 	for i in range(number_of_points // 2):
