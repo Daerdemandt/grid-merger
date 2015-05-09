@@ -70,7 +70,7 @@ class DimTreeNode(object):
 
 	def traverse_objects(self):
 		if self.is_leaf:
-			for obj in self.objects:
+			for obj in sorted(self.objects):
 				yield obj
 		else:
 			child_result_iterators = [self.descendants[d].traverse_objects() for d in self.descendants]
