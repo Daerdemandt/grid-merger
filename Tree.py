@@ -60,6 +60,10 @@ class DimTreeNode(object):
 				self.split()
 		else:
 			self.descendants[self.accomodation(obj)].add(obj)
+			
+	def add_list(self, obj_list):
+		for obj in obj_list:
+			self.add(obj)
 
 	def traverse_objects(self):
 		if self.is_leaf:
@@ -72,7 +76,7 @@ class DimTreeNode(object):
 			for elem in chain.from_iterable(child_result_iterators):
 				yield(elem) # Can't I just somehow return chain result?
 			
-	def print_rec(self, level=0):
+	def print_recursive(self, level=0):
 		if level == 0:
 			print('Dimensions = ', self.dimensions)
 		print('\t' * level + 'Limits:', self.limits)
@@ -81,7 +85,7 @@ class DimTreeNode(object):
 		else:
 			print('\t' * level + 'Descendants:')
 			for d in self.descendants:
-				self.descendants[d].print_rec(level + 1)
+				self.descendants[d].print_recursive(level + 1)
 
 def show_usage():
 	maximum_x = 1
@@ -97,10 +101,12 @@ def show_usage():
 	example_tree = DimTreeNode(volume_limits)
 	
 	number_of_points = 5
-	for i in range(number_of_points):
+	for i in range(number_of_points // 2):
 		example_tree.add(generate_point())
+	# or
+	example_tree.add_list(generate_point() for i in range(number_of_points // 2, number_of_points))
 		
-	example_tree.print_rec()
-	print(list(example_tree.traverse_objects()))
+	example_tree.print_recursive()
+	print('All points:', list(example_tree.traverse_objects()))
 	
 show_usage()
