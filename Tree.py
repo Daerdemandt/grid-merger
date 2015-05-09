@@ -112,7 +112,8 @@ def show_usage():
 	for i in range(number_of_points // 2):
 		example_tree.add(generate_point())
 	# or
-	example_tree.add_list(generate_point() for i in range(number_of_points // 2, number_of_points))
+	points = [generate_point() for i in range(number_of_points // 2, number_of_points)]
+	example_tree.add_list(points)
 		
 	example_tree.print_recursive()
 	print('All points:', list(example_tree.traverse_objects()))
