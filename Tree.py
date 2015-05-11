@@ -4,7 +4,7 @@ from math import sqrt # for distance
 from random import random # for demonstration purposes only
 from collections import OrderedDict # descendants order shall be preserved
 
-
+#TODO: node's volume is a hyperrectangle, or 'box'. Use this name
 class DimTreeNode(object):
 	# Any object stored must be iterable and provide access to at least dim numbers - its coordinates
 	def __init__(self, limits, parent=None, node_capacity=10):
@@ -29,8 +29,7 @@ class DimTreeNode(object):
 		def coord_is_in_upper_half(i):
 			return obj[i] >= sum(self.limits[i]) / 2
 		return tuple(coord_is_in_upper_half(i) for i in range(self.dimensions))
-		
-	
+			
 	def split(self):
 		def new_node(addr):
 			def descendant_limits():
@@ -67,7 +66,7 @@ class DimTreeNode(object):
 	def add_list(self, obj_list):
 		for obj in obj_list:
 			self.add(obj)
-
+#TODO: use yield from
 	def traverse_objects(self):
 		if self.is_leaf:
 			for obj in sorted(self.objects):
@@ -92,8 +91,36 @@ class DimTreeNode(object):
 	def distance(self, a, b):
 		return sqrt(sum((a[i] - b[i])**2 for i in range(self.dimensions)))
 		
+	def get_nodes_by_predicate(self, pred):
+	# Returns iterator over all existing leaf-nodes having predicate of them true
+		if not pred(self.limits):
+			return
+		if self.is_leaf:
+			yield self
+			raise StopIteration
+		child_result_iterators = [self.descendants[child].get_nodes_by_predicate(pred) for child in self.descendants]
+		for elem in chain.from_iterable(child_result_iterators):
+			yield elem
+
+# End of DimTreeNode
 
 
+def distance_from_number_to_interval(number, interval):
+	if interval[0] <= number <= interval[1]:
+		return 0
+	return min(abs(number - border) for border in interval)
+
+def distance_to_box(point_coords, box_coords):
+	dimensions = len(point_coords)
+	assert len(box_coords) == dimensions
+	
+	def distance_component(index):
+		return distance_from_number_to_interval(point_coords[index], box_coords[index])
+	return sum(distance_component(i) for i in range(dimensions))
+
+def sphere_intersects_with_box(center, radius, box):
+	return radius >= distance_to_box(center, box)
+		
 
 def show_usage():
 	maximum_x = 1
@@ -117,5 +144,25 @@ def show_usage():
 		
 	example_tree.print_recursive()
 	print('All points:', list(example_tree.traverse_objects()))
+	
+	
+	def x_is_more_than_one_third(box):
+		return box[0][1] > 1.0/3
+		
+	def x_is_around_one_third(box):
+		return box[0][0] <= 1.0 / 3 <= box[0][1]
+		
+	nodes_more_than_third = example_tree.get_nodes_by_predicate(x_is_more_than_one_third)
+	nodes_around_third = example_tree.get_nodes_by_predicate(x_is_around_one_third)
+	
+	print("\nNodes corresponding to x > 1/3")
+	for node in nodes_more_than_third:
+		node.print_recursive()
+	print("\nNodes corresponding to x = 1/3")
+	for node in nodes_around_third:
+		node.print_recursive()
+	
+	
+	
 	
 show_usage()
