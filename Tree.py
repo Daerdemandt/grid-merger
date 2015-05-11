@@ -66,15 +66,13 @@ class DimTreeNode(object):
 	def add_list(self, obj_list):
 		for obj in obj_list:
 			self.add(obj)
-#TODO: use yield from
+
 	def traverse_objects(self):
 		if self.is_leaf:
-			for obj in sorted(self.objects):
-				yield obj
+			yield from sorted(self.objects)
 		else:
 			child_result_iterators = [self.descendants[d].traverse_objects() for d in self.descendants]
-			for elem in chain.from_iterable(child_result_iterators):
-				yield(elem) # Can't I just somehow return chain result?
+			yield from chain.from_iterable(child_result_iterators)
 			
 	def print_recursive(self, level=0):
 		if level == 0:
@@ -99,8 +97,7 @@ class DimTreeNode(object):
 			yield self
 			raise StopIteration
 		child_result_iterators = [self.descendants[child].get_nodes_by_predicate(pred) for child in self.descendants]
-		for elem in chain.from_iterable(child_result_iterators):
-			yield elem
+		yield from chain.from_iterable(child_result_iterators)
 
 # End of DimTreeNode
 
