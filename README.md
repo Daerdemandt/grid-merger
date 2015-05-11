@@ -18,7 +18,6 @@ Each object stored must have one set of coordinates and provide access via [0]..
 *  Searching for elements in a given sphere
 *  Searching for n closest elements to a given point
 *  Probably: return iterator over all objects in tree, sorted by distance from given point.
-*  Searching for elements for which given monotonous spatial predicate is true
 *  Deleting an element
 *  Maybe something else
 
