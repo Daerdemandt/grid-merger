@@ -106,7 +106,20 @@ class DimTreeNode(object):
 		for leaf in self.get_nodes_by_predicate(pred):
 			yield from leaf.objects
 
+	def get_objects_in_sphere(self, center, radius):
+		box_intersects = lambda box: sphere_intersects_with_box(center, radius, box)
+		box_contained = lambda box: sphere_contains_box(center, radius, box)
+		obj_contained = lambda point: distance(point, center) < radius
+		for node in self.get_nodes_by_predicate(box_intersects):
+			if box_contained(node.limits):
+				yield from node.objects
+			else:
+				yield from (obj for obj in node.objects if obj_contained(obj))
+
 # End of DimTreeNode
+
+def distance(point1, point2):
+	return sqrt(sum((coord[0] - coord[1])**2 for coord in zip(point1, point2)))
 
 def check_dimensions(obj1, obj2):
 	dimensions = len(obj1)
@@ -134,7 +147,13 @@ def distance_to_box(point_coords, box_coords):
 
 def sphere_intersects_with_box(center, radius, box):
 	return radius >= distance_to_box(center, box)
-		
+
+def sphere_contains_box(center, radius, box):
+	return all(distance(center, corner) < radius for corner in get_box_corners(box))
+	
+def get_box_corners(box):
+	for addr in product([False, True], repeat=len(box)):
+		yield (box[i][addr[i]] for i in range(len(box)))
 
 def usage_example():
 
@@ -191,9 +210,13 @@ def usage_example():
 	for node in nodes_by_predicate(x_is_around_one_third):
 		node.print_recursive()
 	
-	print("\nPoints around x = 1/3 :")
+	print("\nPoints in nodes containing x = 1/3 :")
 	print_points(objects_by_predicate(x_is_around_one_third))
-	
-	
+
+	# Getting objects in a given sphere
+	radius = 0.2
+	center = (0.7,)
+	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
+	print_points(example_tree.get_objects_in_sphere(center, radius))
 	
 usage_example()
