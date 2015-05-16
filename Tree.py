@@ -98,7 +98,7 @@ class DimTreeNode(object):
 			return
 		if self.is_leaf:
 			yield self
-			raise StopIteration
+			return
 		child_result_iterators = [self.descendants[child].get_nodes_by_intersection_predicate(pred) for child in self.descendants]
 		yield from chain.from_iterable(child_result_iterators)
 	
