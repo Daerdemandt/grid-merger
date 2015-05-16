@@ -4,7 +4,6 @@ from math import sqrt # for distance
 from random import random # for demonstration purposes only
 from collections import OrderedDict # descendants order shall be preserved
 
-#TODO: node's volume is a hyperrectangle, or 'box'. Use this name
 class DimTreeNode(object):
 	# Any object stored must be iterable and provide access to at least dim numbers - its coordinates
 	def __init__(self, limits, parent=None, node_capacity=10):
@@ -123,10 +122,6 @@ class DimTreeNode(object):
 		yield from self.get_objects_by_2_predicates(intersects, obj_contained)
 		return
 
-		
-	def gobapw(self, intersects, obj_contained):
-		return get_objects_by_2_predicates(intersects, obj_contained)
-
 	def get_objects_by_all_predicates(self, intersects, obj_contained, box_is_contained):
 		if not intersects(self.limits):
 			return
@@ -197,8 +192,9 @@ def usage_example():
 	minimum_x = 0
 	x_limits = (minimum_x, maximum_x)
 	volume_limits = (x_limits,)
+	capacity = 2 # when node is considered full and needs splitting
 
-	example_tree = DimTreeNode(volume_limits, node_capacity=2)
+	example_tree = DimTreeNode(volume_limits, node_capacity=capacity)
 	
 	# Adding points. Can be done one by one
 	number_of_points = 15
