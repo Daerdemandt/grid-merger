@@ -7,18 +7,35 @@ from numpy import inf
 
 class DimTreeNode(object):
 	# Any object stored must be iterable and provide access to at least dim numbers - its coordinates
-	def __init__(self, limits, parent=None, node_capacity=10):
+	def __init__(self, points=None, limits=None, node_capacity=10, parent=None):
 		def is_ordered(obj):
 			return isinstance(obj, list) or isinstance(obj, tuple)
-		assert is_ordered(limits)
-		self.dimensions = len(limits)
 		def is_limit_pair(obj):
 			return is_ordered(obj) and len(obj) == 2 and obj[1] > obj[0]
-		assert all(is_limit_pair(limit_pair) for limit_pair in limits)
+		def broader_limits(lim1, lim2):
+			return (min(lim1[0], lim2[0]), max(lim1[1], lim2[1]))
+			
+		assert points or limits
+		
+#		point_limits
+		if points:
+			assert is_ordered(points)
+			point_limits = get_box_for_points(points)
+			# Comment following line to allow zero volume boxes
+			assert all(is_limit_pair(limit_pair) for limit_pair in point_limits)
+		if limits:
+			assert is_ordered(limits)
+			assert all(is_limit_pair(limit_pair) for limit_pair in limits)
+		if points and limits:
+			check_dimensions(limits, point_limits)
+			limits = tuple(broader_limits(*lp) for lp in zip(point_limits, limits))
+		self.dimensions = len(limits)
 		self.limits = tuple(limits)
 		self.objects = []
 		self.is_leaf = True
 		self.capacity = node_capacity
+		if points:
+			self.add_list(points)
 		
 	def volume_contains(self, obj):
 		return is_in_box(obj, self.limits)
@@ -42,7 +59,7 @@ class DimTreeNode(object):
 			
 				return tuple(upper(i) if addr[i] else lower(i) for i in range(self.dimensions))
 				
-			return DimTreeNode(descendant_limits(), self, self.capacity)
+			return DimTreeNode(limits=descendant_limits(), node_capacity=self.capacity, parent=self)
 		
 		self.descendants = OrderedDict()
 		for address in product([False, True], repeat=self.dimensions):
@@ -181,6 +198,11 @@ class DimTreeNode(object):
 		
 # End of DimTreeNode
 
+def get_box_for_points(points_list): # Not adapted for iterators
+	summary = tuple((len(coord), min(coord), max(coord)) for coord in zip(*points_list))
+	assert summary[0][0] == summary[-1][0] # meaning all points had the same number of coordinates
+	return tuple((coord[1], coord[2]) for coord in summary)
+
 def distance(point1, point2):
 	return sqrt(sum((coord[0] - coord[1])**2 for coord in zip(point1, point2)))
 
@@ -246,16 +268,27 @@ def usage_example():
 	volume_limits = (x_limits,)
 	capacity = 2 # when node is considered full and needs splitting
 
-	example_tree = DimTreeNode(volume_limits, node_capacity=capacity)
+
+	number_of_points = 10
+	points = [generate_point() for i in range(number_of_points)]
+
+	fill_at_creation = True
+	if not fill_at_creation:	
+	# Tree must have a volume to operate on. The volume doesn't change through tree's life and is given at creation
+		example_tree = DimTreeNode(limits=volume_limits, node_capacity=capacity)
 	
-	# Adding points. Can be done one by one
-	number_of_points = 15
-	for i in range(number_of_points // 2):
-		example_tree.add(generate_point())
-	# or by list
-	points = [generate_point() for i in range(number_of_points // 2, number_of_points)]
-	example_tree.add_list(points)
-	del(points) # in case we need the name later
+		# And now we can add some points:
+		example_tree.add_list(points[:number_of_points // 2]) # to keep total number 
+		# Can also be done one by one
+		for i in range(number_of_points // 2):
+			example_tree.add(generate_point())
+
+	# Although volume must be supplied at creation, it can be done either explicitly (as above) or implicitly by providing list of points, volume will be chosen to include them all.
+	# If both points and limits are provided, for each border the more permissive one will be chosen. That is, no starting points will be left behind
+	if fill_at_creation: 
+	# Following two are the same thing:
+		example_tree = DimTreeNode(points, volume_limits, capacity)
+#		example_tree = DimTreeNode(points=points, limits=volume_limits, node_capacity=capacity)
 	
 	# Let's look at the whole tree:
 	print_tree = False

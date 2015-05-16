@@ -11,6 +11,7 @@ Tool to merge 3d point clouds obtained as a result of scanning/modeling parts of
 ### Implemented in tree.py:
 
 *  Creating a tree
+*  Creating a tree for list of points
 *  Adding element
 *  Iterating over all elements (sorted by the very first coordinate)
 *  Printing a tree (useful only on small trees).
