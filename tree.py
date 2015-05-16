@@ -349,5 +349,5 @@ def usage_example():
 		print("\nPoints nearest to {0} and {1}:".format(*points))
 		print_points(example_tree.get_nearest(p) for p in points)
 
-
-usage_example()
+if __name__ == "__main__":
+	usage_example()

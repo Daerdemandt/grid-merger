@@ -2,10 +2,10 @@
 Tool to merge 3d point clouds obtained as a result of scanning/modeling parts of human torso into one without sparses or overlaps
 
 ## Contents:
-Tree.py - implementation of binary spatial tree, octant tree in case of 3d, which is the case.
+tree.py - implementation of binary spatial tree, octant tree in case of 3d, which is the case.
 Each object stored must have one set of coordinates and provide access via [0]..[dimensions-1] to them
 
-### Implemented in Tree.py:
+### Implemented in tree.py:
 
 *  Creating a tree
 *  Adding element
@@ -16,7 +16,7 @@ Each object stored must have one set of coordinates and provide access via [0]..
 *  Searching for elements in a given sphere
 *  Searching for closest element to a given point
 
-### On the way in Tree.py:
+### On the way in tree.py:
 
 *  Searching for n closest elements to a given point
 *  Probably: return iterator over all objects in tree, sorted by distance from given point.
