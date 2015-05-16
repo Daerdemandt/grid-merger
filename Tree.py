@@ -201,7 +201,7 @@ def usage_example():
 	example_tree = DimTreeNode(volume_limits, node_capacity=2)
 	
 	# Adding points. Can be done one by one
-	number_of_points = 5
+	number_of_points = 15
 	for i in range(number_of_points // 2):
 		example_tree.add(generate_point())
 	# or by list
@@ -209,17 +209,23 @@ def usage_example():
 	example_tree.add_list(points)
 	
 	# Let's look at the whole tree:
-	example_tree.print_recursive()
+	print_tree = False
+	if print_tree:
+		example_tree.print_recursive()
 	
 	# Or iterate through all the points. Also, note that they're sorted by x
-	print('All points:')
-	print_points(example_tree.traverse_objects())
+	show_all_points = True
+	if show_all_points:
+		print('All points:')
+		print_points(example_tree.traverse_objects())
 
 	# Getting objects in a given sphere
-	radius = 0.1
-	center = (0.7,)
-	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
-	print_points(example_tree.get_objects_in_sphere(center, radius))
+	show_objects_in_sphere = False
+	if show_objects_in_sphere:
+		radius = 0.1
+		center = (0.7,)
+		print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
+		print_points(example_tree.get_objects_in_sphere(center, radius))
 	
 	# Getting nodes and objects by box-predicate:
 	nodes_by_predicate = example_tree.get_nodes_by_intersection_predicate
@@ -230,22 +236,28 @@ def usage_example():
 		
 	def x_is_around_one_third(box):
 		return box[0][0] <= 1.0 / 3 <= box[0][1]
-		
-	print("\nNodes corresponding to x > 1/3 :")
-	for node in nodes_by_predicate(x_is_more_than_one_third):
-		node.print_recursive()
-		
-	print("\nNodes corresponding to x = 1/3 :")
-	for node in nodes_by_predicate(x_is_around_one_third):
-		node.print_recursive()
 	
-	print("\nPoints in nodes containing x = 1/3 :")
-	print_points(objects_by_predicates(x_is_around_one_third))
+	show_halfspace_nodes = False
+	if show_halfspace_nodes:
+		print("\nNodes corresponding to x > 1/3 :")
+		for node in nodes_by_predicate(x_is_more_than_one_third):
+			node.print_recursive()
+
+	# Note how border nodes may contain both points inside and outside of the area
+	show_border_nodes = True
+	if show_border_nodes:
+		print("\nNodes corresponding to x = 1/3 :")
+		for node in nodes_by_predicate(x_is_around_one_third):
+			node.print_recursive()
+	
+	show_border_nodes_points = True
+	if show_border_nodes_points:
+		print("\nPoints in nodes containing x = 1/3 :")
+		print_points(objects_by_predicates(x_is_around_one_third))
 
 	# Objects in a sphere using predicates. Any other area can be used
 	radius = 0.1
 	center = (0.7,)
-	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
 	# Area is best specified with 3 predicates:
 	# Whether given box intersects with it, this one is vital
 	inter = lambda box: sphere_intersects_with_box(center, radius, box)
@@ -262,14 +274,19 @@ def usage_example():
 	# If area is not convex but other two predicates are present, we can omit box_contained predicate either - this will just somewhat hinder performance
 	without_box_contained = objects_by_predicates(inter, obj_contained)
 	
+	# These are precise methods: note that results are the same, all points are guaranteed to be in the area and none of points is missed
+	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
+	print("All predicates; using convexity; without box_contained at all")
 	print_points(by_all_preds)
 	print_points(using_convexity)
 	print_points(without_box_contained)
-	# These were precise methods, all points were guaranteed to be in area.
+
 	# However, without obj_contained we cannot be sure, so if obj_contained is not provided points near the area will be returned to:
-	print("\nPoints in {1}-vicinity-ish of {0}:".format(center, radius))
 	without_obj_contained = objects_by_predicates(inter, box_is_contained=box_contained)
 	intersections_only = objects_by_predicates(inter)
+	# Note that still no false negatives but with some false positives
+	print("\nPoints in {1}-vicinity-ish of {0}:".format(center, radius))
+	print("Without obj_contained; intersections only")
 	print_points(without_obj_contained)
 	print_points(intersections_only)
 	
