@@ -133,6 +133,45 @@ class DimTreeNode(object):
 			return
 		child_result_iterators = [self.descendants[child].get_objects_by_all_predicates(intersects, obj_contained, box_is_contained) for child in self.descendants]
 		yield from chain.from_iterable(child_result_iterators)
+	
+	def get_full_address(self, point):
+		if self.volume_contains(point):
+			if self.is_leaf:
+				return []
+			this_address = self.accomodation(point)
+			return [this_address] + self.descendants[this_address].get_full_address(point)
+	
+	def get_node_by_full_address(self, address):
+		if not address:
+			return self
+		return self.descendants[address[0]].get_node_by_full_address(address[1:])
+	
+	def get_node_for_point(self, point):
+		return self.get_node_by_full_address(self.get_full_address(point))
+	
+	def get_nearest(self, point): # complex stuff, needs thorough testing
+		if not self.volume_contains(point):
+			projection = project_point_to_box(point, self.limits)
+			assert self.volume_contains(projection) # If assertion is not true it is better to abort than to hang in infinite cycle. It is also a sign that projection function is inconsistent with volume_contains
+			return self.get_nearest(projection)
+		def list_nearest(l):
+			return None if not l else sorted(l, key=lambda x: distance(x, point))[0]
+
+		if self.is_leaf:
+			return list_nearest(self.objects)
+
+		competition_distance = 0
+		first_candidate = self.descendants[self.accomodation(point)].get_nearest(point)
+		if first_candidate: # that node could be empty
+			competition_distance = distance(point, first_candidate)
+		competitor_nodes = (node for node in self.descendants.values() if distance_to_box(point, node.limits) < competition_distance)
+		competitors = (node.get_nearest(point) for node in competitor_nodes)
+		best_competitor = list_nearest(competitors)
+		if all((first_candidate, best_competitor)):
+			return list_nearest((first_candidate, best_competitor))
+		if not any((first_candidate, best_competitor)):
+			return None
+		return first_candidate if first_candidate else best_competitor
 		
 # End of DimTreeNode
 
@@ -172,6 +211,11 @@ def sphere_contains_box(center, radius, box):
 def get_box_corners(box):
 	for addr in product([False, True], repeat=len(box)):
 		yield (box[i][addr[i]] for i in range(len(box)))
+
+def project_point_to_box(point, box):
+	def project_number_to_interval(number, interval):
+		return number if is_in_interval(number, interval) else interval[0] if number < interval[0] else interval[1]
+	return tuple(project_number_to_interval(point[i], box[i]) for i in range(check_dimensions(point, box)))
 
 def usage_example():
 
@@ -285,5 +329,12 @@ def usage_example():
 	print("Without obj_contained; intersections only")
 	print_points(without_obj_contained)
 	print_points(intersections_only)
-	
+
+	show_nearest_examples = True
+	if show_nearest_examples:
+		point1, point2 = ((0.6,), (0.2,))
+		points1 = point1, point2
+		print("\nPoints nearest to {0} and {1}:".format(*points1))
+		print_points(example_tree.get_nearest(p) for p in points1)
+
 usage_example()
