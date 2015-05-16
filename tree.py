@@ -17,15 +17,16 @@ class DimTreeNode(object):
 			
 		assert points or limits
 		
-#		point_limits
+		if limits:
+			assert is_ordered(limits)
+			assert all(is_limit_pair(limit_pair) for limit_pair in limits)
 		if points:
 			assert is_ordered(points)
 			point_limits = get_box_for_points(points)
 			# Comment following line to allow zero volume boxes
 			assert all(is_limit_pair(limit_pair) for limit_pair in point_limits)
-		if limits:
-			assert is_ordered(limits)
-			assert all(is_limit_pair(limit_pair) for limit_pair in limits)
+			if not limits:
+				limits = point_limits
 		if points and limits:
 			check_dimensions(limits, point_limits)
 			limits = tuple(broader_limits(*lp) for lp in zip(point_limits, limits))
