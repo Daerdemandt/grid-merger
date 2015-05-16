@@ -3,6 +3,7 @@ from itertools import product, chain
 from math import sqrt # for distance
 from random import random # for demonstration purposes only
 from collections import OrderedDict # descendants order shall be preserved
+from numpy import inf
 
 class DimTreeNode(object):
 	# Any object stored must be iterable and provide access to at least dim numbers - its coordinates
@@ -160,12 +161,14 @@ class DimTreeNode(object):
 		if self.is_leaf:
 			return list_nearest(self.objects)
 
-		competition_distance = 0
+		competition_distance = float(inf)
 		first_candidate = self.descendants[self.accomodation(point)].get_nearest(point)
 		if first_candidate: # that node could be empty
 			competition_distance = distance(point, first_candidate)
 		competitor_nodes = (node for node in self.descendants.values() if distance_to_box(point, node.limits) < competition_distance)
+
 		competitors = (node.get_nearest(point) for node in competitor_nodes)
+		competitors = (point for point in competitors if point) 
 		best_competitor = list_nearest(competitors)
 		if all((first_candidate, best_competitor)):
 			return list_nearest((first_candidate, best_competitor))
@@ -227,6 +230,8 @@ def usage_example():
 
 	def print_points(points):
 		def point_to_str(obj): # replace 2 in {:0.2g} for more digits
+			if not obj:
+				return 'None'
 			numbers = '; '.join('{:0.2g}'.format(num) for num in obj)
 			return '(' + numbers + ')'
 		print(', '.join(point_to_str(point) for point in points))
@@ -284,13 +289,13 @@ def usage_example():
 			node.print_recursive()
 
 	# Note how border nodes may contain both points inside and outside of the area
-	show_border_nodes = True
+	show_border_nodes = False
 	if show_border_nodes:
 		print("\nNodes corresponding to x = 1/3 :")
 		for node in nodes_by_predicate(x_is_around_one_third):
 			node.print_recursive()
 	
-	show_border_nodes_points = True
+	show_border_nodes_points = False
 	if show_border_nodes_points:
 		print("\nPoints in nodes containing x = 1/3 :")
 		print_points(objects_by_predicates(x_is_around_one_third))
@@ -315,20 +320,23 @@ def usage_example():
 	without_box_contained = objects_by_predicates(inter, obj_contained)
 	
 	# These are precise methods: note that results are the same, all points are guaranteed to be in the area and none of points is missed
-	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
-	print("All predicates; using convexity; without box_contained at all")
-	print_points(by_all_preds)
-	print_points(using_convexity)
-	print_points(without_box_contained)
+	show_predicate_search = True
+	if show_predicate_search:
+		print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
+		print("All predicates; using convexity; without box_contained at all")
+		print_points(by_all_preds)
+		print_points(using_convexity)
+		print_points(without_box_contained)
 
 	# However, without obj_contained we cannot be sure, so if obj_contained is not provided points near the area will be returned to:
 	without_obj_contained = objects_by_predicates(inter, box_is_contained=box_contained)
 	intersections_only = objects_by_predicates(inter)
 	# Note that still no false negatives but with some false positives
-	print("\nPoints in {1}-vicinity-ish of {0}:".format(center, radius))
-	print("Without obj_contained; intersections only")
-	print_points(without_obj_contained)
-	print_points(intersections_only)
+	if show_predicate_search:
+		print("\nPoints in {1}-vicinity-ish of {0}:".format(center, radius))
+		print("Without obj_contained; intersections only")
+		print_points(without_obj_contained)
+		print_points(intersections_only)
 
 	show_nearest_examples = True
 	if show_nearest_examples:
@@ -336,5 +344,6 @@ def usage_example():
 		points1 = point1, point2
 		print("\nPoints nearest to {0} and {1}:".format(*points1))
 		print_points(example_tree.get_nearest(p) for p in points1)
+
 
 usage_example()
