@@ -28,6 +28,9 @@ class DimTreeNode(object):
 		def coord_is_in_upper_half(i):
 			return obj[i] >= sum(self.limits[i]) / 2
 		return tuple(coord_is_in_upper_half(i) for i in range(self.dimensions))
+	
+	def descendant_for_object(self, obj):
+		return self.descendants[self.accomodation(obj)]
 			
 	def split(self):
 		def new_node(addr):
@@ -46,7 +49,7 @@ class DimTreeNode(object):
 			self.descendants[address] = new_node(address)
 		
 		for obj in self.objects:
-			self.descendants[self.accomodation(obj)].add(obj)
+			self.descendant_for_object(obj).add(obj)
 		self.is_leaf = False
 		self.objects = []
 		
@@ -60,7 +63,7 @@ class DimTreeNode(object):
 			if self.is_full():
 				self.split()
 		else:
-			self.descendants[self.accomodation(obj)].add(obj)
+			self.descendant_for_object(obj).add(obj)
 			
 	def add_list(self, obj_list):
 		for obj in obj_list:
@@ -162,7 +165,7 @@ class DimTreeNode(object):
 			return list_nearest(self.objects)
 
 		competition_distance = float(inf)
-		first_candidate = self.descendants[self.accomodation(point)].get_nearest(point)
+		first_candidate = self.descendant_for_object(point).get_nearest(point)
 		if first_candidate: # that node could be empty
 			competition_distance = distance(point, first_candidate)
 		competitor_nodes = (node for node in self.descendants.values() if distance_to_box(point, node.limits) < competition_distance)
@@ -252,6 +255,7 @@ def usage_example():
 	# or by list
 	points = [generate_point() for i in range(number_of_points // 2, number_of_points)]
 	example_tree.add_list(points)
+	del(points) # in case we need the name later
 	
 	# Let's look at the whole tree:
 	print_tree = False
@@ -340,10 +344,10 @@ def usage_example():
 
 	show_nearest_examples = True
 	if show_nearest_examples:
-		point1, point2 = ((0.6,), (0.2,))
-		points1 = point1, point2
-		print("\nPoints nearest to {0} and {1}:".format(*points1))
-		print_points(example_tree.get_nearest(p) for p in points1)
+		points = ((0.6,), (0.2,))
+		# Note that nearest point isn't always in the same node
+		print("\nPoints nearest to {0} and {1}:".format(*points))
+		print_points(example_tree.get_nearest(p) for p in points)
 
 
 usage_example()
