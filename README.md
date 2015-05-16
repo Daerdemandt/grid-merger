@@ -12,6 +12,7 @@ Each object stored must have one set of coordinates and provide access via [0]..
 *  Iterating over all elements (sorted by the very first coordinate)
 *  Printing a tree (useful only on small trees).
 *  Searching for nodes for which given additive areal predicate is true
+*  Searching for elements in a given area (described by 1-3 predicates)
 *  Searching for elements in a given sphere
 
 ### On the way in Tree.py:

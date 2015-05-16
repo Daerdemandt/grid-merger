@@ -92,30 +92,53 @@ class DimTreeNode(object):
 	def distance(self, a, b):
 		return sqrt(sum((a[i] - b[i])**2 for i in range(self.dimensions)))
 		
-	def get_nodes_by_predicate(self, pred):
+	def get_nodes_by_intersection_predicate(self, pred):
 	# Returns iterator over all existing leaf-nodes having predicate of them true
 		if not pred(self.limits):
 			return
 		if self.is_leaf:
 			yield self
 			raise StopIteration
-		child_result_iterators = [self.descendants[child].get_nodes_by_predicate(pred) for child in self.descendants]
+		child_result_iterators = [self.descendants[child].get_nodes_by_intersection_predicate(pred) for child in self.descendants]
 		yield from chain.from_iterable(child_result_iterators)
 	
-	def get_objects_by_node_predicate(self, pred):
-		for leaf in self.get_nodes_by_predicate(pred):
-			yield from leaf.objects
+	def get_objects_by_2_predicates(self, intersects, obj_contained):
+		for leaf in self.get_nodes_by_intersection_predicate(intersects):
+			yield from (obj for obj in leaf.objects if obj_contained(obj))
 
 	def get_objects_in_sphere(self, center, radius):
 		box_intersects = lambda box: sphere_intersects_with_box(center, radius, box)
 		box_contained = lambda box: sphere_contains_box(center, radius, box)
 		obj_contained = lambda point: distance(point, center) < radius
-		for node in self.get_nodes_by_predicate(box_intersects):
-			if box_contained(node.limits):
-				yield from node.objects
-			else:
-				yield from (obj for obj in node.objects if obj_contained(obj))
+		yield from self.get_objects_by_predicates(box_intersects, obj_contained, box_contained)
 
+	def get_objects_by_predicates(self, intersects, obj_contained=None, box_is_contained=None, convex=None):
+		if convex and not box_is_contained and obj_contained:
+			box_contained = lambda box: all(obj_contained(corner) for corner in get_box_corners(box))
+		if not obj_contained: # no way to know exactly, yield all
+			obj_contained = lambda obj: True		
+		if all((intersects, box_is_contained, obj_contained)):
+			yield from self.get_objects_by_all_predicates(intersects, obj_contained, box_is_contained)
+			return
+		yield from self.get_objects_by_2_predicates(intersects, obj_contained)
+		return
+
+		
+	def gobapw(self, intersects, obj_contained):
+		return get_objects_by_2_predicates(intersects, obj_contained)
+
+	def get_objects_by_all_predicates(self, intersects, obj_contained, box_is_contained):
+		if not intersects(self.limits):
+			return
+		if box_is_contained(self.limits):
+			yield from self.traverse_objects()
+			return
+		if self.is_leaf:
+			yield from (obj for obj in self.objects if obj_contained(obj))
+			return
+		child_result_iterators = [self.descendants[child].get_objects_by_all_predicates(intersects, obj_contained, box_is_contained) for child in self.descendants]
+		yield from chain.from_iterable(child_result_iterators)
+		
 # End of DimTreeNode
 
 def distance(point1, point2):
@@ -191,10 +214,16 @@ def usage_example():
 	# Or iterate through all the points. Also, note that they're sorted by x
 	print('All points:')
 	print_points(example_tree.traverse_objects())
+
+	# Getting objects in a given sphere
+	radius = 0.1
+	center = (0.7,)
+	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
+	print_points(example_tree.get_objects_in_sphere(center, radius))
 	
 	# Getting nodes and objects by box-predicate:
-	nodes_by_predicate = example_tree.get_nodes_by_predicate
-	objects_by_predicate = example_tree.get_objects_by_node_predicate
+	nodes_by_predicate = example_tree.get_nodes_by_intersection_predicate
+	objects_by_predicates = example_tree.get_objects_by_predicates
 	
 	def x_is_more_than_one_third(box):
 		return box[0][1] > 1.0/3
@@ -211,12 +240,37 @@ def usage_example():
 		node.print_recursive()
 	
 	print("\nPoints in nodes containing x = 1/3 :")
-	print_points(objects_by_predicate(x_is_around_one_third))
+	print_points(objects_by_predicates(x_is_around_one_third))
 
-	# Getting objects in a given sphere
-	radius = 0.2
+	# Objects in a sphere using predicates. Any other area can be used
+	radius = 0.1
 	center = (0.7,)
 	print("\nPoints in {1}-vicinity of {0}:".format(center, radius))
-	print_points(example_tree.get_objects_in_sphere(center, radius))
+	# Area is best specified with 3 predicates:
+	# Whether given box intersects with it, this one is vital
+	inter = lambda box: sphere_intersects_with_box(center, radius, box)
+	# Whether given box is contained in it
+	box_contained = lambda box: sphere_contains_box(center, radius, box)
+	# And whether given object is contained in it
+	obj_contained = lambda point: distance(point, center) < radius
+
+	by_all_preds = objects_by_predicates(inter, obj_contained, box_contained)
+
+	# For convex areas, box_contained predicate is trivial, so if object predicate is supplied we can just mention the fact:
+	using_convexity = objects_by_predicates(inter, obj_contained, convex=True)
+
+	# If area is not convex but other two predicates are present, we can omit box_contained predicate either - this will just somewhat hinder performance
+	without_box_contained = objects_by_predicates(inter, obj_contained)
+	
+	print_points(by_all_preds)
+	print_points(using_convexity)
+	print_points(without_box_contained)
+	# These were precise methods, all points were guaranteed to be in area.
+	# However, without obj_contained we cannot be sure, so if obj_contained is not provided points near the area will be returned to:
+	print("\nPoints in {1}-vicinity-ish of {0}:".format(center, radius))
+	without_obj_contained = objects_by_predicates(inter, box_is_contained=box_contained)
+	intersections_only = objects_by_predicates(inter)
+	print_points(without_obj_contained)
+	print_points(intersections_only)
 	
 usage_example()
