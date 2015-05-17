@@ -29,12 +29,14 @@ Tool to merge 3d point clouds obtained as a result of scanning/modeling parts of
 
 ### Implemented in area.py:
 
-*  Nothing
+*  Defining area by boundary surface
+*  Making each face know adjacent faces
+*  Checking whether the point is inside the area (needs fully set normals to work)
 
 ### Planned in area.py:
 
-*  Defining area by boundary surface
-*  Checking whether the point is inside the area
+*  Setting normals
+*  Setting list of neighbours and list of angles in proper order
 *  Checking whether given box is inside the area
 *  Checking whether given box intersects with the area
 
